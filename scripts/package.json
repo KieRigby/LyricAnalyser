@@ -1,0 +1,20 @@
+{
+  "name": "data-collector",
+  "version": "1.0.0",
+  "description": "Fetches data from Spotify API and Genius Lyrics API to form a dataset for natural language processing.",
+  "main": "fetch.js",
+  "scripts": {
+    "start": "NODE_ENV=development nodemon fetch.js",
+    "fetch": "NODE_ENV=production node fetch.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kieran Rigby",
+  "license": "ISC",
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "nodemon": "^2.0.7"
+  },
+  "dependencies": {
+    "spotify-web-api-node": "^5.0.2"
+  }
+}
