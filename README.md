@@ -14,10 +14,10 @@ Firstly, you'll need to install the script's dependencies by running `npm instal
 
 To connect the script to your Spotify account to collect the data, you need to:
 
-1. Log in to the [Spotify Developer Portal](https://developer.spotify.com/).
-2. Create an application by going to the [dashboard](https://developer.spotify.com/dashboard/applications).
+1. Log into the [Spotify Developer Portal](https://developer.spotify.com/).
+2. Create an app by going to the [dashboard](https://developer.spotify.com/dashboard/applications).
 3. Click on your app to find your *client ID* and *client secret*.
-4. In the `scripts/` directory, create a file called `.env` and add the following lines (replacing `<client_id>` and `<client_secret>` with your id and secret):
+4. In the `scripts/` directory, create a file called `.env` and add the following lines (replacing `<client_id>` and `<client_secret>` with your ID and secret):
 
 ``` ()
 SPOTIFY_API_ID=<client_id>
@@ -26,7 +26,16 @@ SPOTIFY_API_SECRET=<client_secret>
 
 ### Setting up the Genius API
 
-//TODO
+To connect the Genius API, you will need an access token which can be obtained by:
+
+1. Logging into the [Genius Developer Portal](https://genius.com/signup_or_login).
+2. Create an API client by going to the [dashboard](https://genius.com/api-clients/new). **NOTE** - The API Client may require a website to be provided. You can simply use `http://localhost/`.
+3. Navigate to your API Client to click on "Generate Access Token".
+4. In the `scripts/.env` file, you should add the following line (replacing `<access_token>` with your access token):
+
+```()
+GENIUS_API_TOKEN=<access_token>
+```
 
 ### Running the script
 

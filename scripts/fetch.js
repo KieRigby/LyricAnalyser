@@ -1,10 +1,11 @@
-var SpotifyWebApi = require('spotify-web-api-node');
+const SpotifyWebApi = require('spotify-web-api-node');
+const genius =  require('genius-lyrics-api');
 
 // If running in a development environment fetch keys from .env file
 if (process.env.NODE_ENV == "development")
     require('dotenv').config()
 
-var spotify = new SpotifyWebApi({
+const spotify = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_API_ID,
     clientSecret: process.env.SPOTIFY_API_SECRET,
 });
@@ -16,7 +17,13 @@ spotify.clientCredentialsGrant().then(
         console.log('The access token is ' + data.body['access_token']);
         spotify.setAccessToken(data.body['access_token']);
 
-        
+        genius.getLyrics({
+            apiKey: process.env.GENIUS_API_TOKEN,
+            title: 'Velours',
+            artist: 'Anomalie'
+        }).then((lyrics) => {
+            console.log(lyrics);
+        })
 
     },
     function(err) {
