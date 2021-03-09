@@ -1,0 +1,11 @@
+{
+  "name": "data-collector",
+  "version": "1.0.0",
+  "description": "Fetches data from Spotify API and Genius Lyrics API to form a dataset for natural language processing.",
+  "main": "fetch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kieran Rigby",
+  "license": "ISC"
+}
