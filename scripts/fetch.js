@@ -1,5 +1,6 @@
 const SpotifyWebApi = require('spotify-web-api-node');
 const Genius =  require('genius-lyrics-api');
+const Promise = require("bluebird");
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 // If running in a development environment fetch keys from .env file
@@ -11,28 +12,7 @@ const spotify = new SpotifyWebApi({
     clientSecret: process.env.SPOTIFY_API_SECRET,
 });
 
-// const csvWriter = createCsvWriter({
-//     path: 'output.csv',
-//     header: [
-//         {id: 'artist', title: 'ARTIST'},
-//         {id: 'explicit', title: 'EXPLICIT'},
-//         {id: 'id', title: 'ID'},
-//         {id: 'name', title: 'NAME'},
-//         {id: 'popularity', title: 'POPULARITY'},
-//         {id: 'danceability', title: 'DANCEABILITY'},
-//         {id: 'energy', title: 'ENERGY'},
-//         {id: 'loudness', title: 'LOUDNESS'},
-//         {id: 'speechiness', title: 'SPEECHINESS'},
-//         {id: 'acousticness', title: 'ACOUSTICNESS'},
-//         {id: 'instrumentalness', title: 'INSTRUMENTALNESS'},
-//         {id: 'liveness', title: 'LIVENESS'},
-//         {id: 'valence', title: 'VALENCE'},
-//         {id: 'tempo', title: 'TEMPO'},
-//         {id: 'duration_ms', title: 'DURATION_MS'},
-//         {id: 'genres', title: 'GENRES'},       
-//         {id: 'lyrics', title: 'LYRICS'}       
-//     ]
-// });
+const args = process.argv.splice(2);
 
 const mainFunction = () => {
     login (authenticated);
@@ -64,50 +44,102 @@ const getGenreList = async (callback) => {
     }
 };
 
-const processGenreList = (genres) => {
-    //remove blacklisted genres
-    //loop over all genres
+const processGenreList = async (genres) => {
+    //TODO: remove blacklisted genres
 
-    getPlaylist (genres[1], processPlaylist)
+    //TODO: Proper checks here like if start point > end point
+    const genreStartPoint = parseInt(args[0]);
+    const genreEndPoint = parseInt(args[1]);
+    const concurrency = parseInt(args[2]);
+    const outputFile = args[3];
+
+    genres = genres.splice(genreStartPoint, genreEndPoint);
+    
+    const results = await Promise.map(genres, function(genre) {
+        // Promise.map awaits for returned promises as well.
+        return getPlaylist(genre, processPlaylist);
+    }, {concurrency: concurrency});
+
+    const merged = [].concat.apply([], results);
+    const filtered = merged.filter((track) => {
+        return track != null;
+    });
+
+    // const filtered1 = merged.filter((track) => {
+    //     return track.main_artist != null;
+    // });
+
+    const csvWriter = createCsvWriter({
+        path: outputFile,
+        header: [
+            {id: 'main_artist', title: 'MAIN_ARTIST'},
+            {id: 'explicit', title: 'EXPLICIT'},
+            {id: 'id', title: 'ID'},
+            {id: 'name', title: 'NAME'},
+            {id: 'popularity', title: 'POPULARITY'},
+            {id: 'danceability', title: 'DANCEABILITY'},
+            {id: 'energy', title: 'ENERGY'},
+            {id: 'loudness', title: 'LOUDNESS'},
+            {id: 'speechiness', title: 'SPEECHINESS'},
+            {id: 'acousticness', title: 'ACOUSTICNESS'},
+            {id: 'instrumentalness', title: 'INSTRUMENTALNESS'},
+            {id: 'liveness', title: 'LIVENESS'},
+            {id: 'valence', title: 'VALENCE'},
+            {id: 'tempo', title: 'TEMPO'},
+            {id: 'duration_ms', title: 'DURATION_MS'},
+            {id: 'genres', title: 'GENRES'},       
+            {id: 'lyrics', title: 'LYRICS'}       
+        ]
+    });
+
+    csvWriter.writeRecords(filtered).then(() => {
+        console.log('Written to file ' + outputFile);
+    });
 };
 
 const getPlaylist = async (genre, callback) => {
     try{
         const data = await spotify.searchPlaylists (genre)
-        callback (data.body.playlists.items[0].id);
+        console.log("Genre: " + genre);
+        console.log("Fetching playlist " + data.body.playlists.items[0].name);
+        return callback (data.body.playlists.items[0].id);
     } catch (err) {
         console.error ("Error fetching playlist!", err);
     }
 };
 
 const processPlaylist = (playlist) =>{
-    getPlaylistTracks(playlist, processPlaylistTracks)
+    return getPlaylistTracks(playlist, processPlaylistTracks)
 };
 
 const getPlaylistTracks = async (playlistID, callback) => {
     try{
         const data = await spotify.getPlaylistTracks(playlistID, { limit:50, fields: "items.track(id, name, explicit, popularity, artists(name, id))"});
-        callback (data.body.items.map((item)=>{return item.track}));
+        return callback (data.body.items.map((item)=>{return item.track}));
     } catch (err) {
         console.error ("Error fetching tracks from playlist!", err);
     }
 };
 
 const processPlaylistTracks = (tracks) => {
-    getAudioFeatures(tracks, processAudioFeaturesForTracks)
+    return getAudioFeatures(tracks, processAudioFeaturesForTracks)
 };
 
 const getAudioFeatures = async (tracks, callback) => {
-    let trackIDs = tracks.map((track)=>{return track.id})
     try{
+        let trackIDs = tracks.map((track)=>{return track.id})
         const data = await spotify.getAudioFeaturesForTracks(trackIDs);
-        callback (data.body.audio_features, tracks);
+        return callback (data.body.audio_features, tracks);
     } catch (err) {
         console.error ("Error fetching audio features for tracks", err);
     }
 };
 
 const processAudioFeaturesForTracks = (features, tracks) => {
+    tracks = tracks.filter((track) => {
+        return (track !== null)
+    });
+
     tracks.forEach((track, index) => {
         track.danceability = features[index].danceability
         track.energy = features[index].energy
@@ -123,7 +155,7 @@ const processAudioFeaturesForTracks = (features, tracks) => {
         delete track.artists
     });
 
-    getGenreOfArtists(tracks, processGenresFromArtists)
+    return getGenreOfArtists(tracks, processGenresFromArtists)
 };
 
 const getGenreOfArtists = async (tracks, callback) => {
@@ -131,7 +163,7 @@ const getGenreOfArtists = async (tracks, callback) => {
     try{
         const data = await spotify.getArtists(artistIDs);
         let genres = data.body.artists.map((artist) => {return artist.genres});
-        callback (genres, tracks);
+        return callback (genres, tracks);
     } catch (err) {
         console.error ("Error fetching genres from artists", err);
     }
@@ -141,7 +173,7 @@ const processGenresFromArtists = (genres, tracks) => {
     tracks.forEach((track, index) => {
         tracks[index].genres = genres[index]
     });
-    getLyrics(tracks, processLyrics);
+    return getLyrics(tracks, processLyrics);
 };
 
 const getLyrics = async (tracks, callback) => {
@@ -165,24 +197,22 @@ const getLyrics = async (tracks, callback) => {
         return result.lyrics;
     });
     
-    callback(tracks, lyrics)
+    return callback(tracks, lyrics)
 };
 
 const processLyrics = (tracks, lyrics) => {
 
     tracks.forEach((track, index)=>{
+        if(lyrics[index] !== null)
+            lyrics[index] = lyrics[index].replace(/\n/g, " ");
         track.lyrics = lyrics[index];
+        track.main_artist = track.main_artist.name;
     });
 
     tracks = tracks.filter((track) => {
         return (track.lyrics !== null)
     });
-    console.log(tracks)
-
-
-    // console.log(tracks);
-
-    //write to file
+    return tracks;
 };
 
 mainFunction();
