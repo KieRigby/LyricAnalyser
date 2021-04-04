@@ -42,3 +42,7 @@ GENIUS_API_TOKEN=<access_token>
 If you are running the script in a development environment (i.e. on your local machine) then you can run the command `npm start` to start the script with nodemon (meaning that any changes made to the script will be picked up and the code will be automatically re-ran).
 
 If you are running the script in a production environment, then you should run the command `npm run fetch` which will tell the script to get the API keys and tokens from environment variables rather than a `.env` file.
+
+At the moment, due to time constraints, the script is ran in batches. The genius API seems to stop working after a large number of requests so we have parameterised the javascript file and use a batch script to call the javascript file in batches of 10 with a delay of 2 minutes in-between. We plan to make this more robust in the future.
+
+The output at the moment will be 5 csv files which need to be merged together somehow. Perhaps a tool like [this](http://merge-csv.com/) works.
